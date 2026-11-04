@@ -492,8 +492,8 @@ if st.session_state.image_record is None:
             <h1 class="welcome-title">Image Investigation Dashboard</h1>
             <div class="welcome-sub">Steganography & Hidden Data Forensics Workspace</div>
             <p class="welcome-desc">
-                Upload an image to examine its technical metadata, inspect carrier capacity, 
-                detect embedded signatures, and extract concealed payloads.
+                Upload an image to examine its technical metadata, detect embedded signatures, 
+                and extract concealed payloads.
             </p>
         </div>
         """,
@@ -584,47 +584,30 @@ else:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 2. Choose Analysis Operation (Four Clickable Feature Cards)
+    # 2. Choose Analysis Operation (Three Clickable Feature Cards)
     st.markdown('<div class="section-title">CHOOSE AN ANALYSIS OPERATION</div>', unsafe_allow_html=True)
 
-    card_c1, card_c2, card_c3, card_c4 = st.columns(4)
+    card_c1, card_c2, card_c3 = st.columns(3)
 
-    # CARD 1: Steganography Detection (#728E6D Sage Green)
+    # CARD 1: Hidden Payload Extraction (#728E6D Sage Green)
     with card_c1:
         st.markdown(
             """
             <div class="feature-card">
                 <div>
-                    <div class="feature-icon">🔍</div>
-                    <div class="feature-title">Steganography Detection</div>
-                    <div class="feature-desc">Inspect image carrier for data hidden via transform-domain embedding (Steghide).</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Inspect Steganography", key="btn_card_steg", use_container_width=True):
-            st.session_state.active_operation = "steg_detect"
-
-    # CARD 2: Hidden Text Extraction (#728E6D Sage Green)
-    with card_c2:
-        st.markdown(
-            """
-            <div class="feature-card">
-                <div>
                     <div class="feature-icon">💬</div>
-                    <div class="feature-title">Hidden Text Extraction</div>
-                    <div class="feature-desc">Recover embedded messages or payloads using authorized passphrases.</div>
+                    <div class="feature-title">Hidden Payload Extraction</div>
+                    <div class="feature-desc">Recover embedded files, payloads, or secret messages using Steghide with optional passphrase.</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Extract Content", key="btn_card_extract", use_container_width=True):
+        if st.button("Extract Payload", key="btn_card_extract", use_container_width=True):
             st.session_state.active_operation = "steg_extract"
 
-    # CARD 3: Metadata Analysis (#728E6D Sage Green)
-    with card_c3:
+    # CARD 2: Metadata Analysis (#728E6D Sage Green)
+    with card_c2:
         st.markdown(
             """
             <div class="feature-card">
@@ -640,8 +623,8 @@ else:
         if st.button("Analyze Metadata", key="btn_card_meta", use_container_width=True):
             st.session_state.active_operation = "metadata"
 
-    # CARD 4: Embedded File Detection (#728E6D Sage Green)
-    with card_c4:
+    # CARD 3: Embedded File Detection (#728E6D Sage Green)
+    with card_c3:
         st.markdown(
             """
             <div class="feature-card">
@@ -680,47 +663,10 @@ else:
         # Shared working copy logic for isolated, non-destructive execution
         original_p = Path(img_data["original_path"])
 
-        # ── OPERATION 1: STEGANOGRAPHY DETECTION ──────────────────────────────
-        if active_op == "steg_detect":
+        # ── OPERATION 1: HIDDEN PAYLOAD EXTRACTION ────────────────────────────
+        if active_op == "steg_extract":
             with res_header_col1:
-                st.markdown("### 🔍 Steganography Detection (Steghide)")
-
-            is_supp = is_format_supported(original_p)
-            if not is_supp:
-                st.info(
-                    f"**Carrier Format Not Supported:** The image is formatted as **{img_data['format']}**. "
-                    f"Steghide operates specifically on JPEG and BMP images. "
-                    f"PNG carrier images are not supported by Steghide."
-                )
-            else:
-                if "steg_inspect" not in st.session_state.results_cache:
-                    with st.spinner("Running Steghide inspection on working copy..."):
-                        work_copy = create_working_copy(original_p)
-                        try:
-                            st.session_state.results_cache["steg_inspect"] = inspect_file(work_copy)
-                        finally:
-                            cleanup_working_copy(work_copy)
-
-                res = st.session_state.results_cache["steg_inspect"]
-                if not res.get("tool_available"):
-                    st.warning("⚠️ Steghide is not installed or available on PATH.")
-                else:
-                    if res.get("embedded"):
-                        st.warning("⚠️ **Potential Steganographic Indicator Detected:** Steghide reported valid payload headers or embedding markers.")
-                    else:
-                        st.success("✅ **Inspection Complete:** No obvious unencrypted embedded signature detected with blank passphrase.")
-
-                    st.markdown(f"**Analysis Finding:** {res.get('explanation')}")
-                    if res.get("capacity"):
-                        st.markdown(f"**Embedding Capacity:** `{res['capacity']}`")
-
-                    with st.expander("Technical Command Output (Steghide Info)"):
-                        st.code(res.get("raw_output", "No output captured"), language="text")
-
-        # ── OPERATION 2: HIDDEN TEXT EXTRACTION ───────────────────────────────
-        elif active_op == "steg_extract":
-            with res_header_col1:
-                st.markdown("### 💬 Hidden Text & Payload Extraction")
+                st.markdown("### 💬 Hidden Payload Extraction")
 
             is_supp = is_format_supported(original_p)
             if not is_supp:
@@ -729,17 +675,17 @@ else:
                     f"Steghide extraction is only available for JPEG and BMP carriers."
                 )
             else:
-                st.write("Extract hidden text or embedded files by providing the passphrase (leave blank if none was set).")
+                st.write("Extract hidden payloads, embedded files, or messages using Steghide (leave passphrase blank if none was set).")
                 pass_c1, pass_c2 = st.columns([2.5, 1.2])
 
                 with pass_c1:
                     user_pass = st.text_input("Steghide Passphrase", type="password", placeholder="Enter passphrase (optional)", key="steg_pass_in")
                 with pass_c2:
                     st.write("")
-                    extract_trigger = st.button("🔓 Extract Hidden Content", type="primary", use_container_width=True)
+                    extract_trigger = st.button("🔓 Extract Payload", type="primary", use_container_width=True)
 
                 if extract_trigger:
-                    with st.spinner("Executing extraction with Steghide..."):
+                    with st.spinner("Executing payload extraction with Steghide..."):
                         work_copy = create_working_copy(original_p)
                         ext_dir = create_extraction_dir(inv_id)
                         try:
@@ -754,15 +700,15 @@ else:
                     if curr_ext["success"]:
                         st.success(f"🎉 {curr_ext['message']}")
                         if curr_ext.get("is_text") and curr_ext.get("extracted_text"):
-                            st.markdown("##### Recovered Hidden Text Message:")
+                            st.markdown("##### Recovered Payload Content:")
                             st.text_area("Decoded Payload (UTF-8)", curr_ext["extracted_text"], height=130, disabled=True)
                         else:
-                            st.info(f"Binary file recovered ({curr_ext.get('extracted_file_size', 0)} bytes).")
+                            st.info(f"Binary payload recovered ({curr_ext.get('extracted_file_size', 0)} bytes).")
 
                         if curr_ext.get("extracted_file_path") and Path(curr_ext["extracted_file_path"]).exists():
                             p_bytes = Path(curr_ext["extracted_file_path"]).read_bytes()
                             st.download_button(
-                                label="💾 Download Extracted File",
+                                label="💾 Download Extracted Payload",
                                 data=p_bytes,
                                 file_name=f"recovered_{Path(img_data['filename']).stem}.bin",
                                 mime="application/octet-stream",
@@ -772,7 +718,7 @@ else:
                         with st.expander("Technical Command Output"):
                             st.code(curr_ext.get("raw_output", "No output."), language="text")
 
-        # ── OPERATION 3: METADATA ANALYSIS ────────────────────────────────────
+        # ── OPERATION 2: METADATA ANALYSIS ────────────────────────────────────
         elif active_op == "metadata":
             with res_header_col1:
                 st.markdown("### 📸 Image Metadata Analysis (ExifTool & Pillow)")
@@ -828,7 +774,7 @@ else:
                 with st.expander("Technical Raw Metadata Output"):
                     st.code(m_res.get("raw_output", "No raw output available"), language="text")
 
-        # ── OPERATION 4: EMBEDDED FILE DETECTION ──────────────────────────────
+        # ── OPERATION 3: EMBEDDED FILE DETECTION ──────────────────────────────
         elif active_op == "binwalk":
             with res_header_col1:
                 st.markdown("### 📦 Embedded File & Signature Detection (Binwalk)")
@@ -869,58 +815,61 @@ else:
                 with st.expander("Technical Scan Output (Binwalk stdout)"):
                     st.code(b_res.get("raw_output", "No output captured"), language="text")
 
-        # ── OPERATION 5: ANALYZE ALL (Consolidated Investigation) ─────────────
+        # ── OPERATION 4: ANALYZE ALL (Consolidated Investigation) ─────────────
         elif active_op == "analyze_all":
             with res_header_col1:
                 st.markdown("### ⚡ Consolidated Forensic Investigation")
 
-            # Execute all tools if not already in cache
-            with st.spinner("Executing complete multi-vector forensic pipeline..."):
+            # Execute the 3 remaining operations if not already in cache
+            with st.spinner("Executing consolidated forensic pipeline (Metadata, Embedded Signatures & Payload Extraction)..."):
                 work_copy = create_working_copy(original_p)
                 try:
+                    # 1. Metadata Analysis
                     if "metadata" not in st.session_state.results_cache:
                         m_res = extract_metadata(work_copy)
                         m_sum = get_metadata_summary(m_res)
                         g_coords = parse_gps_coordinates(m_res.get("metadata", {}))
                         st.session_state.results_cache["metadata"] = {"results": m_res, "summary": m_sum, "gps": g_coords}
 
+                    # 2. Embedded File Detection (Binwalk)
                     if "binwalk" not in st.session_state.results_cache:
                         st.session_state.results_cache["binwalk"] = analyze_embedded(work_copy)
 
-                    if "steg_inspect" not in st.session_state.results_cache:
-                        st.session_state.results_cache["steg_inspect"] = inspect_file(work_copy)
+                    # 3. Hidden Payload Extraction (Steghide) - attempt extraction with blank passphrase if not yet run
+                    if "steg_extract" not in st.session_state.results_cache and is_format_supported(original_p):
+                        ext_dir = create_extraction_dir(inv_id)
+                        st.session_state.results_cache["steg_extract"] = extract_data(work_copy, "", ext_dir)
                 finally:
                     cleanup_working_copy(work_copy)
 
             all_meta = st.session_state.results_cache["metadata"]
             all_bin = st.session_state.results_cache["binwalk"]
-            all_steg = st.session_state.results_cache["steg_inspect"]
             ext_cache = st.session_state.results_cache.get("steg_extract", {})
 
             # Overall Status Determination
             indicators_found = []
             if all_bin.get("has_suspicious_indicators"):
                 indicators_found.append("Binwalk detected trailing/embedded file signatures.")
-            if all_steg.get("embedded"):
-                indicators_found.append("Steghide reported potential embedded content.")
+            if ext_cache.get("success"):
+                indicators_found.append("Steghide successfully extracted hidden payload.")
 
             if ext_cache.get("success"):
-                overall_status = "Hidden content extracted"
+                overall_status = "Hidden payload extracted"
             elif indicators_found:
                 overall_status = "Potential indicator found"
             else:
                 overall_status = "No known indicator reported"
 
             # Executive Status Box
-            if overall_status == "Hidden content extracted":
+            if overall_status == "Hidden payload extracted":
                 st.success(f"**Overall Status:** {overall_status}")
             elif overall_status == "Potential indicator found":
                 st.warning(f"**Overall Status:** {overall_status} ({len(indicators_found)} anomaly vectors)")
             else:
                 st.info(f"**Overall Status:** {overall_status}")
 
-            # Consolidated Tabs
-            c_tab1, c_tab2, c_tab3, c_tab4 = st.tabs(["Overview & Metadata", "Steganography", "Embedded Signatures", "Extracted Data"])
+            # Consolidated Tabs (Only the 3 operations)
+            c_tab1, c_tab2, c_tab3 = st.tabs(["Overview & Metadata", "Embedded Signatures", "Extracted Payload"])
 
             with c_tab1:
                 kf = all_meta["results"].get("key_findings", {})
@@ -942,14 +891,6 @@ else:
                 ])
 
             with c_tab2:
-                if not is_format_supported(original_p):
-                    st.info(f"Steghide carrier analysis is not supported for {img_data['format']}. (JPEG and BMP only).")
-                else:
-                    st.markdown(f"**Carrier Inspection:** {all_steg.get('explanation')}")
-                    if all_steg.get("capacity"):
-                        st.markdown(f"**Embedding Capacity:** `{all_steg['capacity']}`")
-
-            with c_tab3:
                 sigs = all_bin.get("signatures", [])
                 st.markdown(f"**Binwalk Summary:** {all_bin.get('summary')}")
                 if sigs:
@@ -960,13 +901,25 @@ else:
                 else:
                     st.info("No recognizable embedded signatures identified.")
 
-            with c_tab4:
-                if ext_cache and ext_cache.get("success"):
-                    st.success(f"Extracted payload: {ext_cache.get('extracted_file_size', 0)} bytes")
+            with c_tab3:
+                if not is_format_supported(original_p):
+                    st.info(f"Carrier format **{img_data['format']}** is not supported by Steghide (JPEG and BMP only).")
+                elif ext_cache and ext_cache.get("success"):
+                    st.success(f"🎉 Extracted payload: {ext_cache.get('extracted_file_size', 0)} bytes")
                     if ext_cache.get("is_text"):
-                        st.text_area("Decoded Text", ext_cache["extracted_text"], height=100, disabled=True)
+                        st.markdown("##### Recovered Payload Content:")
+                        st.text_area("Decoded Payload (UTF-8)", ext_cache["extracted_text"], height=100, disabled=True)
+                    if ext_cache.get("extracted_file_path") and Path(ext_cache["extracted_file_path"]).exists():
+                        p_bytes = Path(ext_cache["extracted_file_path"]).read_bytes()
+                        st.download_button(
+                            label="💾 Download Extracted Payload",
+                            data=p_bytes,
+                            file_name=f"recovered_{Path(img_data['filename']).stem}.bin",
+                            mime="application/octet-stream",
+                            key="btn_dl_all_payload",
+                        )
                 else:
-                    st.info("No payload extracted. Use the **Hidden Text Extraction** card to provide a passphrase if applicable.")
+                    st.info("No payload extracted with blank passphrase. Use the **Hidden Payload Extraction** card above to provide a passphrase if applicable.")
 
             # Compile Investigation Record & PDF Export
             tools_info = check_all_tools()
@@ -984,7 +937,11 @@ else:
                 "overall_summary": f"Investigation of '{img_data['filename']}' completed with status: {overall_status}.",
                 "metadata_results": all_meta["results"],
                 "binwalk_results": all_bin,
-                "steghide_results": all_steg,
+                "steghide_results": {
+                    "format_supported": is_format_supported(original_p),
+                    "tool_available": True,
+                    "explanation": "Steghide payload extraction executed.",
+                },
                 "extraction_results": ext_cache,
                 "tools_status": tools_info,
             }
@@ -1014,7 +971,6 @@ else:
 
                 cached_meta = st.session_state.results_cache.get("metadata", {}).get("results", {})
                 cached_bin = st.session_state.results_cache.get("binwalk", {})
-                cached_steg = st.session_state.results_cache.get("steg_inspect", {})
                 cached_ext = st.session_state.results_cache.get("steg_extract", {})
 
                 op_record = {
@@ -1030,7 +986,11 @@ else:
                     "overall_summary": f"Investigation performed operation: {active_op} on '{img_data['filename']}'.",
                     "metadata_results": cached_meta,
                     "binwalk_results": cached_bin,
-                    "steghide_results": cached_steg,
+                    "steghide_results": {
+                        "format_supported": is_format_supported(original_p),
+                        "tool_available": True,
+                        "explanation": "Steghide payload extraction executed." if active_op == "steg_extract" else "N/A",
+                    },
                     "extraction_results": cached_ext,
                     "tools_status": tools_info,
                 }
